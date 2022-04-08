@@ -1,10 +1,10 @@
-from chatlib_skeleton import *
+import chatlib
 
 
 def check_build(input_cmd, input_data, expected_output):
     print("Input: ", input_cmd, input_data, "\nExpected output: ", expected_output)
     try:
-        output = build_message(input_cmd, input_data)
+        output = chatlib.build_message(input_cmd, input_data)
     except Exception as e:
         output = "Exception raised: " + str(e)
 
@@ -17,7 +17,7 @@ def check_build(input_cmd, input_data, expected_output):
 def check_parse(msg_str, expected_output):
     print("Input: ", msg_str, "\nExpected output: ", expected_output)
     try:
-        output = parse_message(msg_str)
+        output = chatlib.parse_message(msg_str)
     except Exception as e:
         output = "Exception raised: " + str(e)
 
@@ -40,7 +40,7 @@ def main():
     # cmd too long
     check_build("0123456789ABCDEFG", "", None)
     # msg too long
-    check_build("A", "A" * (MAX_DATA_LENGTH + 1), None)
+    check_build("A", "A" * (chatlib.MAX_DATA_LENGTH + 1), None)
 
     # PARSE
 
