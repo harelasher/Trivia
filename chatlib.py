@@ -1,6 +1,6 @@
 CMD_FIELD_LENGTH = 16  # Exact length of cmd field (in bytes)
 LENGTH_FIELD_LENGTH = 4   # Exact length of length field (in bytes)
-MAX_DATA_LENGTH = 10 ** LENGTH_FIELD_LENGTH-1  # Max size of data field according to protocol
+MAX_DATA_LENGTH = 10 ** LENGTH_FIELD_LENGTH - 1  # Max size of data field according to protocol
 MSG_HEADER_LENGTH = CMD_FIELD_LENGTH + 1 + LENGTH_FIELD_LENGTH + 1  # Exact size of header (CMD+LENGTH fields)
 MAX_MSG_LENGTH = MSG_HEADER_LENGTH + MAX_DATA_LENGTH  # Max size of total message
 DELIMITER = "|"  # Delimiter character in protocol
@@ -49,8 +49,7 @@ def parse_message(full_msg):
         Returns: cmd (str), data (str). If some error occured, returns None, None
         """
     if len(full_msg) < CMD_FIELD_LENGTH + 1 + LENGTH_FIELD_LENGTH + 1:
-        return (
-            ERROR_RETURN, ERROR_RETURN)
+        return ERROR_RETURN, ERROR_RETURN
     cmd_str = full_msg[0:CMD_FIELD_LENGTH]
     length = full_msg[CMD_FIELD_LENGTH + 1:CMD_FIELD_LENGTH + 1 + LENGTH_FIELD_LENGTH]
     if full_msg[CMD_FIELD_LENGTH] != DELIMITER or full_msg[(CMD_FIELD_LENGTH + LENGTH_FIELD_LENGTH + 1)] != DELIMITER:
