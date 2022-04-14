@@ -7,7 +7,7 @@ SERVER_PORT = 5678
 
 # HELPER SOCKET METHODS
 
-def build_and_send_message(conn, code, msg):  # DONE??
+def build_and_send_message(conn, code, msg):  # DONE
     """
     Builds a new message using chatlib, wanted code and message.
     Prints debug info, then sends it to the given socket.
@@ -19,7 +19,7 @@ def build_and_send_message(conn, code, msg):  # DONE??
     conn.send(full_msg.encode('utf-8'))
 
 
-def recv_message_and_parse(conn):
+def recv_message_and_parse(conn):  # dont know??
     """
     Recieves a new message from given socket.
     Prints debug info, then parses the message using chatlib.
@@ -34,7 +34,7 @@ def recv_message_and_parse(conn):
 
 def connect():  # DONE
     # Implement Code
-    my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # בונה את הלקוח
+    my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     my_socket.connect((SERVER_IP, SERVER_PORT))
     return my_socket
 
@@ -44,21 +44,18 @@ def error_and_exit(msg):  # DONE??
     exit()
 
 
-def login(conn):
+def login(conn):  # DONE
     while True:
-        username = input("Please enter username: \n")
-        password = input("Please enter password: \n")
-
-        build_and_send_message(conn, chatlib.PROTOCOL_CLIENT["logout_msg"], "")
-
+        username = input("Please enter username: ")
+        password = input("Please enter password: ")
+        build_and_send_message(conn, chatlib.PROTOCOL_CLIENT["login_msg"], username+chatlib.DATA_DELIMITER+password)
         msg = conn.recv(1024)
-        print(msg)
-        if len(msg) == 0:
+        if b"LOGIN_OK" in msg:
             return
 
 
 def logout(conn):
-    print("cancer")
+    build_and_send_message(conn, chatlib.PROTOCOL_CLIENT["logout_msg"], "")
 
 
 def main():
