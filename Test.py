@@ -4,11 +4,9 @@ import chatlib  # To use chatlib functions or consts, use chatlib.****
 SERVER_IP = "127.0.0.1"  # Our server will run on same computer as client
 SERVER_PORT = 5678
 
-
 def get_logged_users(conn):
     msg_code, msg = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["getlogged_msg"], "")
     return msg
-
 
 def get_highscore(conn):
     msg_code, msg = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["gethighscore_msg"], "")
@@ -27,7 +25,7 @@ def build_send_recv_parse(conn, code, data):
     return msg_code, msg
 
 
-def build_and_send_message(conn, code, msg):
+def build_and_send_message(conn, code, msg):  # DONE
     """
     Builds a new message using chatlib, wanted code and message.
     Prints debug info, then sends it to the given socket.
@@ -39,7 +37,7 @@ def build_and_send_message(conn, code, msg):
     conn.send(full_msg.encode('utf-8'))
 
 
-def recv_message_and_parse(conn):
+def recv_message_and_parse(conn):  # don't know??
     """
     Receives a new message from given socket.
     Prints debug info, then parses the message using chatlib.
