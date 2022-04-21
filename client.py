@@ -3,11 +3,35 @@ import chatlib  # To use chatlib functions or consts, use chatlib.****
 
 SERVER_IP = "127.0.0.1"  # Our server will run on same computer as client
 SERVER_PORT = 5678
+used_questions = []
+
+
+def play_question(conn):
+    try:
+        msg_code, question = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["getquestion_msg"], "")
+        parts_of_question = question.split("#")
+        if msg_code != 'NO_QUESTIONS':
+            used_questions.append(parts_of_question[0])
+            print(parts_of_question[1])
+            print("1. ", parts_of_question[2])
+            print("2. ", parts_of_question[3])
+            print("3. ", parts_of_question[4])
+            print("4. ", parts_of_question[5])
+
+            answer = input("answer (1-4): ").lower()
+            msg_code, msg = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["sendanswer_msg"],
+                                                parts_of_question[0] + chatlib.DATA_DELIMITER + answer)
+            print(msg_code)
+            print("right anwswer: " + msg)
+        else:
+            print("no more questions ")
+    except NameError:
+        print("error")
 
 
 def get_logged_users(conn):
     msg_code, msg = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["getlogged_msg"], "")
-    return msg
+    return "logged users: " + msg
 
 
 def get_highscore(conn):
@@ -35,7 +59,6 @@ def build_and_send_message(conn, code, msg):
     Returns: Nothing
     """
     full_msg = chatlib.build_message(code, msg)
-    print("full message: ", full_msg)
     conn.send(full_msg.encode('utf-8'))
 
 
@@ -75,15 +98,16 @@ def login(conn):  # DONE
         username = input("Please enter username: ")
         password = input("Please enter password: ")
         build_and_send_message(conn, chatlib.PROTOCOL_CLIENT["login_msg"], username+chatlib.DATA_DELIMITER+password)
-        msg = conn.recv(1024)
-        if b"LOGIN_OK" in msg:
+        cmd, msg = recv_message_and_parse(conn)
+        if "LOGIN_OK" in cmd:
             print("--Logged in--")
             return
-        print("--Couldn't Login Try Again--")
+        print(msg)
+        print("--Try Again--")
 
 
 def logout(conn):
-    build_and_send_message(conn, chatlib.PROTOCOL_CLIENT["logout_msg"], "")
+    build_and_send_message(conn, chatlib.PROTOCOL_CLIENT['logout_msg'], "")
 
 
 def main():
@@ -107,6 +131,8 @@ def main():
         elif "l" == function:
             Users = get_logged_users(UsedSocket)
             print(Users)
+        elif "t" == function:
+            play_question(UsedSocket)
 
 
 if __name__ == '__main__':

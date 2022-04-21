@@ -30,6 +30,9 @@ def build_message(cmd, data):
         Gets command name (str) and data field (str) and creates a valid protocol message
         Returns: str, or None if error occured
         """
+    if type(data) is int:
+        data = str(data)
+
     data_length = len(data)
     cmd_length = len(cmd)
     if data_length > MAX_DATA_LENGTH:
@@ -61,8 +64,7 @@ def parse_message(full_msg):
     if not len(data_str) == length:
         return ERROR_RETURN, ERROR_RETURN
     else:
-        return (
-            cmd_str.strip(), data_str)
+        return cmd_str.strip(), data_str
 
 
 def split_data(msg, expected_fields):
