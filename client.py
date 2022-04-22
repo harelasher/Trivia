@@ -3,7 +3,6 @@ import chatlib  # To use chatlib functions or consts, use chatlib.****
 
 SERVER_IP = "127.0.0.1"  # Our server will run on same computer as client
 SERVER_PORT = 5678
-used_questions = []
 
 
 def play_question(conn):
@@ -11,7 +10,6 @@ def play_question(conn):
         msg_code, question = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["getquestion_msg"], "")
         parts_of_question = question.split("#")
         if msg_code != 'NO_QUESTIONS':
-            used_questions.append(parts_of_question[0])
             print(parts_of_question[1])
             print("1. ", parts_of_question[2])
             print("2. ", parts_of_question[3])
@@ -25,7 +23,7 @@ def play_question(conn):
             print("right anwswer: " + msg)
         else:
             print("no more questions ")
-    except NameError:
+    except:
         print("error")
 
 

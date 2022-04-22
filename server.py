@@ -5,11 +5,13 @@
 import socket
 import chatlib
 import random
+import select
 
 # GLOBALS
 users = {}
 questions = {}
 logged_users = {}  # a dictionary of client hostnames to usernames - will be used later
+messages_to_send = []  # [(socket, message), ...]
 
 ERROR_MSG = "Error! "
 SERVER_PORT = 5678
@@ -57,15 +59,21 @@ def handle_answer_message(conn, username, answer):
         build_and_send_message(conn, chatlib.PROTOCOL_SERVER['wrong_msg'], real_answer_for_question)
 
 
+def print_client_sockets():
+    return list(logged_users.keys())
+
+
 def build_and_send_message(conn, code, msg):
+    global messages_to_send
     full_msg = chatlib.build_message(code, msg)
-    conn.send(full_msg.encode('utf-8'))
+    messages_to_send.append((conn, full_msg))
+    #  conn.send(full_msg.encode('utf-8'))
 
 
 def recv_message_and_parse(conn):
     data = conn.recv(10021).decode()
     if len(data) == 0:
-        return
+        return "", ""
     cmd, msg = chatlib.parse_message(data)
     if cmd != chatlib.ERROR_RETURN or msg != chatlib.ERROR_RETURN:
         # print(f"The server sent: {data}")
@@ -102,7 +110,10 @@ def load_user_database():
         "test": {"password": "test", "score": 52, "questions_asked": []},
         "yossi": {"password": "123", "score": 50, "questions_asked": []},
         "master": {"password": "master", "score": 200, "questions_asked": []},
-        "a": {"password": "a", "score": 123, "questions_asked": []}
+        "a": {"password": "a", "score": 123, "questions_asked": []},
+        "b": {"password": "b", "score": 500, "questions_asked": [0]},
+        "hello": {"password": "hello", "score": 100, "questions_asked": [1]},
+        "harel": {"password": "asher", "score": 1000, "questions_asked": [0, 1]}
     }
     return users
 
@@ -117,8 +128,7 @@ def setup_socket():
     """
     server_socket = socket.socket()
     server_socket.bind((SERVER_IP, SERVER_PORT))
-    server_socket.listen(1)
-    server_socket, address = server_socket.accept()
+    server_socket.listen(10)
     return server_socket
 
 
@@ -132,7 +142,7 @@ def send_error(conn, error_msg):
 
 
 # Implement code ...
-def handle_logged_message(conn, username):
+def handle_logged_message(conn):
     global logged_users
     list_logged = list(logged_users.values())
     string_logged = ",".join([str(item) for item in list_logged])
@@ -158,9 +168,8 @@ def handle_logout_message(conn):
     del logged_users[conn.getpeername()]
 
 
-def handle_all_score_message(conn, username):
+def handle_all_score_message(conn):
     global users
-    print("you ", users)
     list_of_score = {}
     for names in users:
         list_of_score.update({names: users[names]["score"]})
@@ -181,17 +190,24 @@ def handle_login_message(conn, data):
     global logged_users  # To be used later
 
     username, password = data.split("#")[0], data.split("#")[1]
-    if username in users:
-        if password == users[username]["password"]:
-            build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
-            logged_users.update({conn.getpeername(): username})
-            return
+    if username not in logged_users.values():
+        if username in users:
+            if password == users[username]["password"]:
+                build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
+                logged_users.update({conn.getpeername(): username})
+                return
+            else:
+                build_and_send_message(conn, chatlib.PROTOCOL_SERVER['login_failed_msg'], "Error! Password does not "
+                                                                                          "match")
+                print("Error! Password does not match")
+                return
         else:
-            build_and_send_message(conn, chatlib.PROTOCOL_SERVER['login_failed_msg'], "Error! Password does not match")
-            print("Error! Password does not match")
-    else:
-        build_and_send_message(conn, chatlib.PROTOCOL_SERVER['login_failed_msg'], "Error! Username does not exist")
-        print("Error! Username does not exist")
+            build_and_send_message(conn, chatlib.PROTOCOL_SERVER['login_failed_msg'], "Error! Username does not exist")
+            print("Error! Username does not exist")
+            return
+    build_and_send_message(conn, chatlib.PROTOCOL_SERVER['login_failed_msg'], f"Error! Can't login into account,"
+                                                                              f" '{username}' already logged in")
+    return
 
 
 # Implement code ...
@@ -204,21 +220,21 @@ def handle_client_message(conn, cmd, data):
     Returns: None
     """
     global logged_users  # To be used later
-
-    if cmd == "LOGIN" and conn.getpeername() not in logged_users:
+    if cmd == "LOGIN":
         handle_login_message(conn, data)
     elif cmd == "MY_SCORE" and conn.getpeername() in logged_users:
         handle_getscore_message(conn, logged_users[conn.getpeername()])
     elif cmd == 'LOGOUT' and conn.getpeername() in logged_users:
+        print("cencer")
         handle_logout_message(conn)
-    elif cmd == "GET_QUESTION" and conn.getpeername() in logged_users:
+    elif cmd == "GET_QUESTION" and conn.getpeername() in logged_users.keys():
         handle_question_message(conn, logged_users[conn.getpeername()])
     elif cmd == "SEND_ANSWER" and conn.getpeername() in logged_users:
         handle_answer_message(conn, logged_users[conn.getpeername()], data)
     elif cmd == "LOGGED" and conn.getpeername() in logged_users:
-        handle_logged_message(conn, logged_users[conn.getpeername()])
+        handle_logged_message(conn)
     elif cmd == 'HIGHSCORE' and conn.getpeername() in logged_users:
-        handle_all_score_message(conn, logged_users[conn.getpeername()])
+        handle_all_score_message(conn)
 
 
 # Implement code ...
@@ -230,15 +246,38 @@ def main():
     print('server is up at : ', SERVER_IP, SERVER_PORT)
     print("Welcome to Trivia Server!")
     global users
-    global questions
-    users = load_user_database()
-    while True:
-        cmd, msg = recv_message_and_parse(server_socket)
-        print("= ", cmd, " = ", msg)
-        handle_client_message(server_socket, cmd, msg)
-        if cmd == "LOGOUT":
-            server_socket = setup_socket()
+    global messages_to_send
+    global logged_users
 
+    users = load_user_database()
+    open_client_sockets = []
+
+    def send_waiting_messages(wlist):
+        for message in messages_to_send:
+            current_socket, data = message
+            if current_socket in wlist:
+                current_socket.send(data.encode())
+            messages_to_send.remove(message)
+
+    while True:
+        rlist, wlist, xlist = select.select([server_socket] + open_client_sockets, open_client_sockets, [])
+        for current_socket in rlist:
+            if current_socket is server_socket:
+                (new_socket, address) = server_socket.accept()
+                print("new socket connected to server: ", new_socket.getpeername())
+                open_client_sockets.append(new_socket)
+            else:
+                cmd, msg = "", ""
+                cmd, msg = recv_message_and_parse(current_socket)
+                if len(msg) == 0 and len(cmd) == 0:
+                    p_id = current_socket.getpeername()
+                    open_client_sockets.remove(current_socket)
+                    print(f"Connection with client {p_id} closed.")
+                    handle_logout_message(current_socket)
+                else:
+                    print(current_socket, cmd, msg)
+                    handle_client_message(current_socket, cmd, msg)
+        send_waiting_messages(wlist)
 
 # Implement code ...
 

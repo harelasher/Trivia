@@ -1,10 +1,25 @@
-users = {
-    "test": {"password": "test", "score": 0, "questions_asked": []},
-    "yossi": {"password": "123", "score": 50, "questions_asked": []},
-    "master": {"password": "master", "score": 200, "questions_asked": []}
-}
-username = "test"
-password = "test"
-if username in users:
-    if password == users[username]["password"]:
-        print("heelo")
+def setup_socket():
+    """
+    Creates new listening socket and returns it
+    Recieves: -
+    Returns: the socket object
+    """
+    server_socket = socket.socket()
+    server_socket.bind((SERVER_IP, SERVER_PORT))
+    server_socket.listen(5)
+    server_socket, address = server_socket.accept()
+    return server_socket
+
+
+while True:
+    cmd = None
+    msg = None
+    try:
+        cmd, msg = recv_message_and_parse(server_socket)
+    except:
+        server_socket = setup_socket()
+    print("= ", cmd, " = ", msg)
+    handle_client_message(server_socket, cmd, msg)
+    if cmd == "LOGOUT":
+        server_socket = setup_socket()
+
