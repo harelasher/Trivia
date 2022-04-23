@@ -22,7 +22,7 @@ PROTOCOL_SERVER = {'login_ok_msg': 'LOGIN_OK',
                    'question_msg': 'YOUR_QUESTION',
                    'error_msg': 'ERROR',
                    'noquestions_msg': 'NO_QUESTIONS'}
-ERROR_RETURN = None
+ERROR = None
 
 
 def build_message(cmd, data):
@@ -36,9 +36,9 @@ def build_message(cmd, data):
     data_length = len(data)
     cmd_length = len(cmd)
     if data_length > MAX_DATA_LENGTH:
-        return ERROR_RETURN
+        return ERROR
     elif cmd_length > CMD_FIELD_LENGTH:
-        return ERROR_RETURN
+        return ERROR
     else:
         padded_cmd = cmd.strip().ljust(CMD_FIELD_LENGTH)
         padded_length = str(data_length).zfill(LENGTH_FIELD_LENGTH)
@@ -52,17 +52,17 @@ def parse_message(full_msg):
         Returns: cmd (str), data (str). If some error occured, returns None, None
         """
     if len(full_msg) < CMD_FIELD_LENGTH + 1 + LENGTH_FIELD_LENGTH + 1:
-        return ERROR_RETURN, ERROR_RETURN
+        return ERROR, ERROR
     cmd_str = full_msg[0:CMD_FIELD_LENGTH]
     length = full_msg[CMD_FIELD_LENGTH + 1:CMD_FIELD_LENGTH + 1 + LENGTH_FIELD_LENGTH]
     if full_msg[CMD_FIELD_LENGTH] != DELIMITER or full_msg[(CMD_FIELD_LENGTH + LENGTH_FIELD_LENGTH + 1)] != DELIMITER:
-        return ERROR_RETURN, ERROR_RETURN
+        return ERROR, ERROR
     elif not length.strip().isdigit():
-        return ERROR_RETURN, ERROR_RETURN
+        return ERROR, ERROR
     length = int(length)
     data_str = full_msg[MSG_HEADER_LENGTH:MSG_HEADER_LENGTH + length]
     if not len(data_str) == length:
-        return ERROR_RETURN, ERROR_RETURN
+        return ERROR, ERROR
     else:
         return cmd_str.strip(), data_str
 

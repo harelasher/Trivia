@@ -75,12 +75,12 @@ def recv_message_and_parse(conn):
     if len(data) == 0:
         return "", ""
     cmd, msg = chatlib.parse_message(data)
-    if cmd != chatlib.ERROR_RETURN or msg != chatlib.ERROR_RETURN:
+    if cmd != chatlib.ERROR or msg != chatlib.ERROR:
         # print(f"The server sent: {data}")
         # print(f"Interpretation:\nCommand: {cmd}, message: {msg}")
         return cmd, msg
     else:
-        return chatlib.ERROR_RETURN, chatlib.ERROR_RETURN
+        return chatlib.ERROR, chatlib.ERROR
 
 
 # Data Loaders #
@@ -165,7 +165,8 @@ def handle_logout_message(conn):
     Returns: None
     """
     global logged_users
-    del logged_users[conn.getpeername()]
+    if conn.getpeername() in logged_users:
+        del logged_users[conn.getpeername()]
 
 
 def handle_all_score_message(conn):
@@ -213,7 +214,7 @@ def handle_login_message(conn, data):
 # Implement code ...
 
 
-def handle_client_message(conn, cmd, data):
+def handle_client_message(conn, cmd, data):  # בדיקת הפקודה ושליחה לאותו פונקציה מתאימה
     """
     Gets message code and data and calls the right function to handle command
     Recieves: socket, message code and data
@@ -225,7 +226,6 @@ def handle_client_message(conn, cmd, data):
     elif cmd == "MY_SCORE" and conn.getpeername() in logged_users:
         handle_getscore_message(conn, logged_users[conn.getpeername()])
     elif cmd == 'LOGOUT' and conn.getpeername() in logged_users:
-        print("cencer")
         handle_logout_message(conn)
     elif cmd == "GET_QUESTION" and conn.getpeername() in logged_users.keys():
         handle_question_message(conn, logged_users[conn.getpeername()])
@@ -267,7 +267,6 @@ def main():
                 print("new socket connected to server: ", new_socket.getpeername())
                 open_client_sockets.append(new_socket)
             else:
-                cmd, msg = "", ""
                 cmd, msg = recv_message_and_parse(current_socket)
                 if len(msg) == 0 and len(cmd) == 0:
                     p_id = current_socket.getpeername()
